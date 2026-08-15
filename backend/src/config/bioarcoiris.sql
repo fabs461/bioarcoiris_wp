@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS admins (
 );
 
 INSERT INTO admins (username, password_hash)
-VALUES ('admin', '$2b$10$MsVuQi.o5lXpfugHqiXKDeqPTsWrl3PSzAWzg6S0fmNJYsH9Jzc0y');
+VALUES ('admin', '$2b$10$1oJydkRO57sWuJmtLFGDf.8o8lA.UmpqzKblg3ZbJUrkrDeP6XXye');
 
 -- Tabla de productos
 CREATE TABLE IF NOT EXISTS products (
