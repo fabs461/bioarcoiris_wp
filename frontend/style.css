@@ -1,7 +1,5 @@
 /* =============================================================
    BIO-ARCOIRIS — Tienda virtual
-   Sistema visual: monocromo, negro predominante, editorial y sobrio.
-   Sin colores de arcoíris — paleta estrictamente neutra.
    ============================================================= */
 
 :root {
@@ -50,6 +48,16 @@ body {
 }
 
 img, svg { display: block; }
+
+/* Cualquier elemento con el atributo/propiedad "hidden" debe ocultarse,
+   incluso si su propia clase le pone display:flex/grid/etc. Sin esta
+   regla global, un elemento oculto por JS (el.hidden = true) con una
+   clase que fija "display" (p. ej. .drawer__link, .cart-badge,
+   .ledger-strip__admin) se queda visible, porque una regla de autor
+   pesa más que la regla por defecto del navegador para [hidden]. Esto
+   es lo que hacía que "Pedidos" y otros elementos aparecieran cuando
+   no debían. */
+[hidden] { display: none !important; }
 
 button { font-family: inherit; cursor: pointer; }
 
@@ -173,6 +181,8 @@ a { color: inherit; }
 .menu-btn:hover { border-color: var(--paper-50); }
 .menu-btn svg { width: 20px; height: 20px; }
 
+
+
 .brand {
   display: flex;
   align-items: center;
@@ -248,7 +258,7 @@ a { color: inherit; }
   background: rgba(10, 10, 11, 0.55);
   z-index: 150;
 }
-.drawer-overlay[hidden] { display: none; }
+
 
 .drawer {
   position: fixed;
@@ -265,7 +275,7 @@ a { color: inherit; }
   flex-direction: column;
   animation: drawer-in 0.18s ease;
 }
-.drawer[hidden] { display: none; }
+
 
 @keyframes drawer-in {
   from { transform: translateX(-100%); }
@@ -363,10 +373,29 @@ a { color: inherit; }
    --------------------------------------------------------------- */
 
 .home-hero {
+  position: relative;
+  overflow: hidden;
   background: var(--ink);
   color: var(--paper-50);
 }
+/* Imagen de ejemplo de fondo (placeholder). Reemplaza la URL por una foto
+   propia cuando quieras usar la imagen definitiva de la tienda. */
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: url("https://picsum.photos/seed/bioarcoiris-tienda/1600/700") center/cover no-repeat;
+  filter: grayscale(1) contrast(1.05) brightness(0.55);
+}
+.home-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0.35) 0%, rgba(10, 10, 11, 0.88) 100%);
+}
 .home-hero__inner {
+  position: relative;
+  z-index: 1;
   max-width: 1280px;
   margin: 0 auto;
   padding: 56px 32px 48px;
@@ -395,6 +424,8 @@ a { color: inherit; }
 }
 
 .category-tile {
+  position: relative;
+  overflow: hidden;
   background: var(--ink);
   color: var(--paper-50);
   border: 1px solid var(--ink-700);
@@ -408,13 +439,34 @@ a { color: inherit; }
   text-align: left;
   transition: transform 0.15s ease, border-color 0.15s ease, background 0.15s ease;
 }
-.category-tile:hover { background: var(--ink-800); border-color: var(--gray-500); transform: translateY(-2px); }
+.category-tile:hover { border-color: var(--gray-500); transform: translateY(-2px); }
+
+/* Imagen de ejemplo (placeholder) de fondo por catálogo. */
+.category-tile__img {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) contrast(1.05) brightness(0.62);
+  transition: transform 0.2s ease;
+}
+.category-tile:hover .category-tile__img { transform: scale(1.05); }
+
+.category-tile::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(180deg, rgba(10, 10, 11, 0.25) 0%, rgba(10, 10, 11, 0.85) 78%);
+}
 
 .category-tile__icon {
+  position: relative;
+  z-index: 1;
   width: 40px;
   height: 40px;
   border-radius: var(--radius-md);
-  border: 1px solid var(--ink-600);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  background: rgba(10, 10, 11, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -422,12 +474,14 @@ a { color: inherit; }
 }
 .category-tile__icon svg { width: 21px; height: 21px; }
 
-.category-tile__label { font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; }
+.category-tile__label { position: relative; z-index: 1; font-family: var(--font-display); font-weight: 700; font-size: 1.12rem; }
 
 .category-tile__cta {
+  position: relative;
+  z-index: 1;
   margin-top: auto;
   font-size: 0.8rem;
-  color: var(--gray-300);
+  color: var(--gray-200);
   font-weight: 600;
   letter-spacing: 0.01em;
 }
@@ -753,7 +807,7 @@ a { color: inherit; }
   padding: 40px 16px;
   overflow-y: auto;
 }
-.modal-overlay[hidden] { display: none; }
+
 
 .modal {
   background: var(--paper-50);
@@ -785,7 +839,7 @@ a { color: inherit; }
   max-width: 90vw;
   text-align: center;
 }
-.toast[hidden] { display: none; }
+
 
 .site-footer {
   border-top: 1px solid var(--line);

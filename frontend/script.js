@@ -12,11 +12,12 @@
     products: [],
     isAdmin: false,
     search: "",
-    currentView: "home",
+    currentView: null,
     currentCategory: null, // slug o null (todos / búsqueda)
     sort: "default",
     cols: 3,
     orders: [],
+    viewHistory: [], // pila para el botón "atrás"
   };
 
   const els = {
@@ -33,6 +34,7 @@
     homeCategoryGrid: document.getElementById("homeCategoryGrid"),
     drawerCategoryLinks: document.getElementById("drawerCategoryLinks"),
 
+    backBtn: document.getElementById("backBtn"),
     menuBtn: document.getElementById("menuBtn"),
     drawer: document.getElementById("drawer"),
     drawerOverlay: document.getElementById("drawerOverlay"),
@@ -119,6 +121,15 @@
 
   function loadSession() {
     const token = localStorage.getItem("ba_token");
+    // Antes solo se comprobaba si existía un token en localStorage, así que
+    // una sesión vieja o vencida dejaba visibles "Pedidos" y los controles
+    // de administrador aunque ya no fueran válidos. Ahora se valida que el
+    // token tenga forma de JWT y no haya expirado.
+    if (token && !isValidAdminToken(token)) {
+      localStorage.removeItem("ba_token");
+      state.isAdmin = false;
+      return;
+    }
     state.isAdmin = !!token;
   }
 
@@ -128,11 +139,19 @@
   function renderHomeCategoryGrid() {
     els.homeCategoryGrid.innerHTML = CATEGORIES.map((cat) => `
       <button type="button" class="category-tile" data-cat="${cat.slug}">
+        <span class="category-tile__img" style="background-image:url('${categoryExampleImage(cat.slug)}')" aria-hidden="true"></span>
         <span class="category-tile__icon">${cat.icon}</span>
         <span class="category-tile__label">${escapeHtml(cat.label)}</span>
         <span class="category-tile__cta">Ver catálogo →</span>
       </button>
     `).join("");
+  }
+
+  // Imagen de ejemplo (placeholder) por catálogo, mientras no haya fotos
+  // reales cargadas. Cambia el "seed" o reemplaza esta función por tus
+  // propias imágenes cuando quieras usar fotos definitivas.
+  function categoryExampleImage(slug) {
+    return `https://picsum.photos/seed/bioarcoiris-${slug}/500/360`;
   }
 
   function renderDrawerCategoryLinks() {
@@ -368,6 +387,29 @@
      ----------------------------------------------------------- */
   function showView(viewName, opts) {
     opts = opts || {};
+
+    // "Pedidos" es exclusivo de administrador. Se valida acá (y no solo
+    // en el clic del menú) para cubrir también el botón "atrás", el
+    // parámetro ?cat= al cargar la página, o cualquier otra forma de
+    // llegar a esta vista sin pasar por el enlace del menú.
+    if (viewName === "pedidos" && !state.isAdmin) {
+      viewName = "home";
+      opts = { resetHistory: true };
+    }
+
+    const isBack = !!opts.__back;
+    const nextCategory = (viewName === "catalogo" && "cat" in opts) ? opts.cat : state.currentCategory;
+
+    if (opts.resetHistory) {
+      state.viewHistory = [];
+    } else if (!isBack && state.currentView !== null) {
+      const changed = state.currentView !== viewName ||
+        (viewName === "catalogo" && state.currentCategory !== nextCategory);
+      if (changed) {
+        state.viewHistory.push({ view: state.currentView, cat: state.currentCategory });
+      }
+    }
+
     document.querySelectorAll(".view").forEach((v) => { v.hidden = true; });
     const target = document.getElementById("view-" + viewName);
     if (target) target.hidden = false;
@@ -397,8 +439,17 @@
     if (viewName === "administracion") renderAdminView();
     if (viewName === "pedidos") loadOrders();
 
+    els.backBtn.hidden = state.viewHistory.length === 0;
+
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   }
+
+  els.backBtn.addEventListener("click", () => {
+    const prev = state.viewHistory.pop();
+    els.backBtn.hidden = state.viewHistory.length === 0;
+    if (!prev) { showView("home"); return; }
+    showView(prev.view, { cat: prev.cat, __back: true });
+  });
 
   function openDrawer() {
     els.drawer.hidden = false;
@@ -736,7 +787,7 @@
       renderCatalog();
       els.checkoutForm.reset();
       showToast("Pedido enviado. Nos pondremos en contacto contigo.");
-      showView("home");
+      showView("home", { resetHistory: true });
     } catch (error) {
       els.checkoutError.textContent = error.message || "No se pudo enviar el pedido.";
       els.checkoutError.hidden = false;
@@ -756,6 +807,18 @@
       const response = await fetch(`${API_URL}/orders`, {
         headers: { "Authorization": `Bearer ${token}` }
       });
+      if (response.status === 401 || response.status === 403) {
+        // El backend ya no reconoce el token (401 = falta, 403 = inválido
+        // o vencido — así responde authMiddleware.js): cerramos la sesión
+        // también en el navegador para que "Pedidos" y los controles de
+        // admin dejen de mostrarse.
+        localStorage.removeItem("ba_token");
+        state.isAdmin = false;
+        updateAuthUI();
+        showToast("Tu sesión de administrador venció. Ingresa de nuevo.");
+        showView("home", { resetHistory: true });
+        return;
+      }
       if (!response.ok) throw new Error("No se pudieron cargar los pedidos.");
       state.orders = await response.json();
     } catch (error) {
