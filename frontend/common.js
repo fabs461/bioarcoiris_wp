@@ -4,8 +4,8 @@
 
 // Backend local. Levanta el backend con "npm run dev" dentro de /backend
 // (por defecto queda escuchando en el puerto 3000).
-const API_URL = "http://localhost:3000/api";
-const SERVER_ORIGIN = "http://localhost:3000";
+const API_URL = "https://bioarcoiris-wp.onrender.com/api";
+const SERVER_ORIGIN = "https://bioarcoiris-wp.onrender.com";
 
 const PLACEHOLDER_IMAGE =
   "data:image/svg+xml;utf8," +
