@@ -9,9 +9,12 @@ const upload = require('./src/middleware/uploadMiddleware');
 const authRoutes = require('./src/routes/authRoutes');
 const productRoutes = require('./src/routes/productRoutes');
 const orderRoutes = require('./src/routes/orderRoutes');
-const ALLOWED_ORIGINS = ["https://bioarcoiris.netlify.app"];
 const app = express();
 const PORT = process.env.PORT || 3000;
+const ALLOWED_ORIGINS = [
+  "https://bioarcoiris.netlify.app"
+];
+const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
 
 app.set('trust proxy', 1);
 
@@ -24,21 +27,29 @@ app.use(helmet({
   contentSecurityPolicy: false,
 }));
 
-// --------------------------------------------------------------
-// CORS — configurado para desarrollo LOCAL.
-// Se acepta cualquier origen que corra en localhost/127.0.0.1
-// (Live Server, http-server, Vite, etc.) sin importar el puerto.
-// Cuando el sitio se vuelva a desplegar en un dominio real, cambia
-// esto por el/los dominio(s) de producción.
-// --------------------------------------------------------------
-const LOCAL_ORIGIN = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/;
-
 app.use(cors({
   origin: (origin, callback) => {
-    if (!origin || LOCAL_ORIGIN.test(origin)) return callback(null, true);
-    callback(new Error('No permitido por CORS'));
+    // Permitir peticiones sin Origin (por ejemplo, algunas herramientas)
+    if (!origin) {
+      return callback(null, true);
+    }
+
+    // Permitir localhost durante desarrollo
+    if (LOCAL_ORIGIN.test(origin)) {
+      return callback(null, true);
+    }
+
+    // Permitir frontend de producción
+    if (ALLOWED_ORIGINS.includes(origin)) {
+      return callback(null, true);
+    }
+
+    console.log("Origen rechazado por CORS:", origin);
+    callback(new Error("No permitido por CORS"));
   },
+
   methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
